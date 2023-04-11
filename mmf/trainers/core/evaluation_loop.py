@@ -10,7 +10,8 @@ from mmf.common.meter import Meter
 from mmf.common.report import Report
 from mmf.common.sample import to_device
 from mmf.utils.distributed import gather_tensor, is_main, is_xla
-
+import cv2
+from attn_view import visualize_pred
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,10 @@ class TrainerEvaluationLoopMixin(ABC):
                 if self._can_use_tqdm(dataloader):
                     dataloader = tqdm.tqdm(dataloader)
                 for batch in dataloader:
+                    # %%%% addition %%%%%%%%%
+                    bboxs=batch.image_info_0.bbox.numpy()[0][:,:-1]            # the last one is cls score. Size: (100,5)
+                    img_index= str(batch.image_id.item())
+                    # %%%%%%%%%%%%%%%
                     prepared_batch = reporter.prepare_batch(batch)
                     prepared_batch = to_device(prepared_batch, self.device)
                     loaded_batches += 1
@@ -134,6 +139,15 @@ class TrainerEvaluationLoopMixin(ABC):
                     report = Report(prepared_batch, model_output)
                     reporter.add_to_report(report, self.model)
                     report.detach()
+
+                    # %%%%%%%%%%%
+                    # if self.model=="vilbert":
+                    att_n=(model_output["attention_weights"][1][1]).detach().cpu().clone().numpy()[0,0,:,:] 
+                    # if dataset=="COCO":
+                    img_path="/data/vqa/datasets/COCO/test2015/COCO_test2015_000000"+img_index+".jpg"
+                    img = cv2.imread(img_path)
+                    for i in range(0, 100):  
+                        visualize_pred(img_path,bboxs,att_n[:,i])
 
                 reporter.postprocess_dataset_report()
 

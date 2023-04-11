@@ -944,7 +944,7 @@ class ViLBERTBase(BertPreTrainedModel):
         co_attention_mask: Optional[Tensor] = None,
         task_ids: Optional[Tensor] = None,
         output_all_encoded_layers: bool = False,
-        output_all_attention_masks: bool = False,
+        output_all_attention_masks: bool = True, # False
     ) -> Tuple[
         Tensor,
         Tensor,
